@@ -12,9 +12,9 @@ mongoose.connect('mongodb://localhost:27017/leakage_form');
 app.put('/leakage_form/:id', async (req, res) => {
   const id=req.params.id
   const { date, skuName, rejectCount, actualCount, totalCount,operation } = req.body
-  
-  if (rejectCount >= actualCount || actualCount >= totalCount) {
-    return res.status(400).json({ error: 'Validation error' });
+  console.log('req.body',req.body,(rejectCount < actualCount) && (actualCount < totalCount))
+  if (!(rejectCount < actualCount) || !(actualCount < totalCount)) {
+    return res.status(400).json({ error: 'Validation error: Reject Count should be less than Actual Count and Actual count should be less than Total count' });
   }
   try {
     console.log(id,req.body)
@@ -53,7 +53,13 @@ app.get('/leakage_form', async (req, res) => {
         },
         actualCount: null});
       }else if(filter==='Pending'){
-        data = await Leakage.find({actualCount: null});
+        // data = await Leakage.find({actualCount: null});
+         data = await Leakage.find({  
+          date: {
+            $ne: todayFormatted
+          },
+          actualCount: null
+        });
       }
       else{
         data = await Leakage.find({
