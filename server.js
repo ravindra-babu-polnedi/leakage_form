@@ -12,17 +12,26 @@ mongoose.connect('mongodb://localhost:27017/leakage_form');
 app.put('/leakage_form/:id', async (req, res) => {
   const id=req.params.id
   const { date, skuName, rejectCount, actualCount, totalCount,operation } = req.body
-  console.log('req.body',req.body,(rejectCount < actualCount) && (actualCount < totalCount))
+ 
+
+  const result = validateCounts(rejectCount, actualCount, totalCount);
+  console.log(result,'result')
+  if (!result.valid) {
+    return res.status(400).json(result)
+  }
+
   if (!(rejectCount < actualCount) || !(actualCount < totalCount)) {
     return res.status(400).json({ error: 'Validation error: Reject Count should be less than Actual Count and Actual count should be less than Total count' });
   }
+  
+
   try {
     console.log(id,req.body)
     const updatedEntry = await Leakage.findByIdAndUpdate(
       id,
       { date, skuName, rejectCount, actualCount, totalCount, operation }
     );
-    console.log('updatedentry',updatedEntry)
+   
     if (!updatedEntry) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -74,6 +83,30 @@ app.get('/leakage_form', async (req, res) => {
       res.status(500).json({ error: 'Error fetching data' });
     }
   });
+
+
+  function validateCounts(rejectCount, actualCount, totalCount) {
+    // Helper function to validate a single count
+    const isValidCount = (count) => {
+        return typeof count === 'number' && count >= 0 && count <= 999999;
+    };
+
+    if (!isValidCount(rejectCount)) {
+        return { valid: false, error: 'rejectCount must be a number between 0 and 999999' };
+    }
+
+    if (!isValidCount(actualCount)) {
+        return { valid: false, error: 'actualCount must be a number between 0 and 999999' };
+    }
+
+    if (!isValidCount(totalCount)) {
+        return { valid: false, error: 'totalCount must be a number between 0 and 999999' };
+    }
+
+    return { valid: true };
+}
+
+
   
 
 app.listen(3000, () => {
